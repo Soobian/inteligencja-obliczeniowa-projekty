@@ -103,14 +103,8 @@ class Tournament:
             switch_player = np.random.choice(np.arange(0, 2), p=[0.5, 0.5])
             self.start_round(switch_player)
 
-    def get_player_time(self, player):
-        if not player:
-            return self.player1.mean_time
-        else:
-            return self.player2.mean_time
-
 
 if __name__ == "__main__":
     tournament = Tournament(20, 5, 2)
     tournament.start_tournament()
-    print(tournament.ranking, tournament.get_player_time(0), tournament.get_player_time(1))
+    print(tournament.ranking, tournament.player1.mean_time, tournament.player2.mean_time)
