@@ -56,7 +56,7 @@ def _get_agents(
 
 def _get_env():
     """This function is needed to provide callables for DummyVectorEnv."""
-    return PettingZooEnv(pong_v3.env(render_mode=None))
+    return PettingZooEnv(pong_v3.env())
 
 
 if __name__ == "__main__":
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     test_envs = DummyVectorEnv([_get_env for _ in range(1)])
 
     # seed
-    seed = 1
+    seed = 420
     np.random.seed(seed)
     torch.manual_seed(seed)
     train_envs.seed(seed)
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         train_collector=train_collector,
         test_collector=test_collector,
         max_epoch=50,
-        step_per_epoch=1000,
+        step_per_epoch=700,
         step_per_collect=10,
         episode_per_test=10,
         batch_size=64,
@@ -138,6 +138,5 @@ if __name__ == "__main__":
         
     )
 
-    # return result, policy.policies[agents[1]]
     print(f"\n==========Result==========\n{result}")
-    # print("\n(the trained policy can be accessed via policy.policies[agents[1]])")
+    print("\n(the trained policy can be accessed via policy.policies[agents[1]])")
