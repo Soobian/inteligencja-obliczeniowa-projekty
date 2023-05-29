@@ -81,7 +81,7 @@ if __name__ == "__main__":
     train_collector = Collector(
         policy,
         train_envs,
-        VectorReplayBuffer(20000, len(train_envs)),
+        VectorReplayBuffer(100, len(train_envs)),
         exploration_noise=True,
     )
     test_collector = Collector(policy, test_envs, exploration_noise=True)
