@@ -41,6 +41,7 @@ def _get_agents(
             model=net,
             optim=optim,
             discount_factor=0.7,
+            
             estimation_step=3,
             target_update_freq=320,
         )
@@ -55,7 +56,7 @@ def _get_agents(
 
 def _get_env():
     """This function is needed to provide callables for DummyVectorEnv."""
-    return PettingZooEnv(pong_v3.env())
+    return PettingZooEnv(pong_v3.env(render_mode=None))
 
 
 if __name__ == "__main__":
@@ -80,12 +81,14 @@ if __name__ == "__main__":
     train_collector = Collector(
         policy,
         train_envs,
-        VectorReplayBuffer(1000, len(train_envs)),
+        VectorReplayBuffer(20000, len(train_envs)),
         exploration_noise=True,
     )
     test_collector = Collector(policy, test_envs, exploration_noise=True)
     # policy.set_eps(1)
-    train_collector.collect(n_step=64 * 10)  # batch size * training_num
+    result = train_collector.collect(n_step=64 * 10)  # batch size * training_num
+    rews, lens = result["rews"], result["lens"]
+
     print(f'Collector setup')
     log_path = os.path.join("log", "pong", "dqn")
     writer = SummaryWriter(log_path)
@@ -93,13 +96,15 @@ if __name__ == "__main__":
     logger=TensorboardLogger(writer)
 
     # ======== Step 4: Callback functions setup =========
+    print(f'Callback functions setup')
+
     def save_best_fn(policy):
         model_save_path = os.path.join("log", "rps", "dqn", "policy.pth")
         os.makedirs(os.path.join("log", "rps", "dqn"), exist_ok=True)
         torch.save(policy.policies[agents[1]].state_dict(), model_save_path)
 
     def stop_fn(mean_rewards):
-        return mean_rewards >= 0.1
+        return mean_rewards >= 100
 
     def train_fn(epoch, env_step):
         policy.policies[agents[1]].set_eps(0.1)
@@ -109,16 +114,17 @@ if __name__ == "__main__":
 
     def reward_metric(rews):
         return rews[:, 1]
-    print(f'Callback functions setup')
 
     # ======== Step 5: Run the trainer =========
+    print(f'Run the trainer...')
+
     result = offpolicy_trainer(
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
         max_epoch=50,
-        step_per_epoch=400,
-        step_per_collect=20,
+        step_per_epoch=1000,
+        step_per_collect=10,
         episode_per_test=10,
         batch_size=64,
         train_fn=train_fn,
@@ -131,7 +137,6 @@ if __name__ == "__main__":
         logger=logger,
         
     )
-    print(f'Run the trainer...')
 
     # return result, policy.policies[agents[1]]
     print(f"\n==========Result==========\n{result}")
