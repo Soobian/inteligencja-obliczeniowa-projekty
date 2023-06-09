@@ -1,2 +1,2 @@
-from conv_observation import ConvObservation
-from step_reward import StepReward
+from own_gym_env_2048.wrappers.conv_observation import ConvObservation
+from own_gym_env_2048.wrappers.step_reward import StepReward
