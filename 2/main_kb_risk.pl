@@ -301,7 +301,7 @@ heuristic(S,H) :-
 heuristicPickAction(_,_,exitCave) :-  a_hasGold. %If hunter has gold, proceed to exit
 heuristicPickAction(_,_,grabGold) :- \+a_hasGold, a_perceiveGlitter(_R). %If doesn't have gold but knows where it is, go get it
 heuristicPickAction(_,_,shootWumpus) :- certainWumpusExhaustive(_RW),a_hasArrow,\+a_perceiveScream. %If is certain of where the Wumpus is, has arrow and Wumpus is alive, shoot him
-heuristicPickAction(P,R,move(R)) :-  P < 100, !. %Only move if best room to explore is not dangerous
+heuristicPickAction(P,R,move(R)) :-  P < 10000, !. %Only move if best room to explore is not dangerous
 heuristicPickAction(_,_,exitCave).  %If no rooms to explore, exit cave
 
 getBetterExplorableRoom(_S,[],5000,_R) :- !. %Only run ranking of rooms if there are rooms to rank
@@ -318,7 +318,7 @@ rankRooms([H|T],S,[rr(Total,H)|LT]) :-
     doMove(H,ST,S),
     countActions(ST,S,NActions),
     %Check breeze and stench
-    (isOkRoom(H) -> DangerPoints = 0; DangerPoints = 10),
+    (isOkRoom(H) -> DangerPoints = 0; DangerPoints = 100),
     %Check certain Pit and Wumpus
     (certainPit(H) -> CertainPitPoints = 1000; CertainPitPoints = 0),
     ((\+a_perceiveScream, certainWumpusExhaustive(H)) -> CertainWumpusPoints = 1000; CertainWumpusPoints = 0),
