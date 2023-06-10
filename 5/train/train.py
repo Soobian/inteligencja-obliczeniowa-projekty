@@ -9,6 +9,7 @@ from torch import optim
 
 import gymnasium as gym
 from own_gym_env_2048.wrappers.conv_observation import ConvObservation
+from torch.utils.tensorboard import SummaryWriter
 
 
 class PolicyNetwork(nn.Module):
@@ -59,8 +60,8 @@ class A2C(nn.Module):
         self.device = device
         self.n_envs = n_envs
 
-        self.actor = PolicyNetwork()
-        self.critic = ValueNetwork()
+        self.actor = PolicyNetwork().to(device)
+        self.critic = ValueNetwork().to(device)
 
         self.actor_optim = optim.Adam(params=self.actor.parameters(), lr=actor_lr)
         self.critic_optim = optim.Adam(params=self.critic.parameters(), lr=critic_lr)
@@ -69,7 +70,7 @@ class A2C(nn.Module):
         x = torch.tensor(x, dtype=torch.float32).to(self.device)
         state_values = self.critic(x)
         action_logits = self.actor(x)
-        return (state_values, action_logits)
+        return state_values, action_logits
 
     def select_action(self, x: np.ndarray, legal_actions):
         batch_size = len(x)
@@ -122,8 +123,8 @@ class A2C(nn.Module):
         critic_loss.backward()
         self.critic_optim.step()
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
 
     n_envs = 10
     n_updates = 10000
@@ -137,7 +138,10 @@ if __name__ == '__main__':
 
     envs = gym.vector.make("TwentyFortyEight-v0", num_envs=n_envs, wrappers=ConvObservation)
 
-    device = torch.device("cpu")
+    writer = SummaryWriter()
+
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    print(f"Using device: {device}")
 
     agent = A2C(device, critic_lr, actor_lr, n_envs)
 
@@ -157,7 +161,7 @@ if __name__ == '__main__':
             states, infos = envs_wrapper.reset(seed=42)
 
         for step in range(n_steps_per_update):
-            actions, action_log_probs, state_value_preds, entropy = agent.select_action(states, infos["legal actions"])
+            actions, action_log_probs, state_value_preds, entropy = agent.select_action(states.to(device), infos["legal actions"])
 
             states, rewards, terminated, truncated, infos = envs_wrapper.step(actions.cpu().numpy())
 
@@ -177,9 +181,14 @@ if __name__ == '__main__':
             ent_coef,
             device,
         )
+        writer.add_scalar("Loss/Critic", critic_loss.item(), sample_phase)
+        writer.add_scalar("Loss/Actor", actor_loss.item(), sample_phase)
+        writer.add_scalar("Entropy", entropy.mean().item(), sample_phase)
 
         agent.update_parameters(critic_loss, actor_loss)
 
         critic_losses.append(critic_loss.detach().cpu().numpy())
         actor_losses.append(actor_loss.detach().cpu().numpy())
         entropies.append(entropy.detach().mean().cpu().numpy())
+        writer.close()
+
