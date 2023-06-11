@@ -126,8 +126,8 @@ class A2C(nn.Module):
 
 if __name__ == '__main__':
 
-    n_envs = 10
-    n_updates = 10000
+    n_envs = 4
+    n_updates = 1000
     n_steps_per_update = 128
 
     gamma = 0.999
@@ -161,7 +161,7 @@ if __name__ == '__main__':
             states, infos = envs_wrapper.reset(seed=42)
 
         for step in range(n_steps_per_update):
-            actions, action_log_probs, state_value_preds, entropy = agent.select_action(states.to(device), infos["legal actions"])
+            actions, action_log_probs, state_value_preds, entropy = agent.select_action(states, infos["legal actions"])
 
             states, rewards, terminated, truncated, infos = envs_wrapper.step(actions.cpu().numpy())
 
@@ -190,5 +190,5 @@ if __name__ == '__main__':
         critic_losses.append(critic_loss.detach().cpu().numpy())
         actor_losses.append(actor_loss.detach().cpu().numpy())
         entropies.append(entropy.detach().mean().cpu().numpy())
-        writer.close()
+    writer.close()
 
