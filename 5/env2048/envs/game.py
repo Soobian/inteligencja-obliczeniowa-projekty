@@ -49,7 +49,7 @@ class Game2048:
         self.__temp_board = np.zeros((board_size, board_size), dtype=np.uint32)
         self.__add_two_or_four()
         self.__add_two_or_four()
-        self.__power_mat = np.zeros((board_size, board_size, 16 + (board_size - 4)), dtype=np.uint32)
+        self.__power_mat = np.zeros((board_size, board_size, 16 + (board_size - 4)), dtype=np.int64)
 
     def __add_two_or_four(self):
         """Add tile with number two."""

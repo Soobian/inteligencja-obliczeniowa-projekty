@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch import optim
 
 import gymnasium as gym
-from own_gym_env_2048.wrappers.conv_observation import ConvObservation
+import env2048
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     actor_lr = 0.001
     critic_lr = 0.005
 
-    envs = gym.vector.make("TwentyFortyEight-v0", num_envs=n_envs, wrappers=ConvObservation)
+    envs = gym.vector.make("TwentyFortyEight-v1", num_envs=n_envs)
 
     writer = SummaryWriter()
 

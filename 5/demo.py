@@ -4,7 +4,7 @@ import env2048
 # game with user input
 
 if __name__ == '__main__':
-    env = gym.make("TwentyFortyEight-v1")
+    env = gym.make("TwentyFortyEight-v1", render_mode="rgb_array")
     env.reset()
     env.render()
     done = False
@@ -21,7 +21,7 @@ if __name__ == '__main__':
         else:
             print("Wrong key")
             continue
-        obs, reward, done, info, _ = env.step(action)
+        obs, reward, done, info = env.step(action)
         env.render()
         print("Reward: ", reward)
 
