@@ -3,18 +3,21 @@ import gymnasium as gym
 from gymnasium import spaces
 import pygame
 import mc.env.env2048.colors
+import mc.env.env2048.colors as colors
 
 
 class Gym2048(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self):
+    def __init__(self, render_mode="rgb_array"):
+        self.__game = None
         self.board = []
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0, high=2048, shape=(4, 4), dtype=np.uint16)
         self.reset()
         self._window = None
         self._clock = None
+        self._render_mode = render_mode
 
     def reset(self):
         self.board = np.zeros((4, 4), dtype=np.uint16)
@@ -46,14 +49,14 @@ class Gym2048(gym.Env):
 
     def render(self, mode="human"):
         assert mode
-        if mode == "human":
+        if self.render_mode == "human":
             board = self.board
             for i, row in enumerate(board):
                 print(" | ".join("{:4d}".format(tile) if tile != 0 else "    " for tile in row))
                 if i < len(board) - 1:
                     print("-" * (7 * len(board) - 1))
             print("\n")
-        elif mode == "rgb_array":
+        elif self._render_mode == "rgb_array":
             return self._render_frame()
 
     def _render_frame(self):
@@ -68,7 +71,7 @@ class Gym2048(gym.Env):
         self._window.fill((255, 255, 255))
 
         # Draw the game board
-        board = self.__game.get_board()
+        board = self.board
         tile_size = 80
         margin = 10
         for i in range(len(board)):

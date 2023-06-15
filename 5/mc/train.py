@@ -8,6 +8,9 @@ from torch import optim
 import gymnasium as gym
 import env
 import random
+from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
+
 
 
 class DQN(nn.Module):
@@ -96,7 +99,9 @@ if __name__ == '__main__':
 
     env2048 = gym.make("Gym-v0")
 
-    for episode in range(num_episodes):
+    writer = SummaryWriter()
+
+    for episode in tqdm(range(num_episodes), desc="Training"):
         state = env2048.reset()  # Reset the game and get the initial state
         done = False
         total_reward = 0
@@ -109,7 +114,9 @@ if __name__ == '__main__':
 
         agent.replay()
 
-        print(f"Episode: {episode + 1}, Reward: {total_reward}")
+        writer.add_scalar('Reward/Episode', total_reward, episode)
+
+        # print(f"Episode: {episode + 1}, Reward: {total_reward}")
 
     # After training, you can use the trained agent to play the game
     state = env2048.reset()
@@ -122,7 +129,3 @@ if __name__ == '__main__':
         # Perform any necessary visualization or logging
 
     print("Game over!")
-
-
-
-
