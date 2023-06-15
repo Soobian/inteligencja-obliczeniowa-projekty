@@ -11,6 +11,8 @@ import random
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f'Using device: {device}')
 
 
 class DQN(nn.Module):
@@ -43,10 +45,10 @@ class DQNAgent:
         self.epsilon = 1.0  # Exploration vs exploitation factor
         self.epsilon_decay = 0.99  # Epsilon decay rate
         self.epsilon_min = 0.01  # Minimum epsilon value
-        self.batch_size = 32  # Batch size for training
+        self.batch_size = 128  # Batch size for training
 
-        self.model = DQN(state_size, action_size)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        self.model = DQN(state_size, action_size).to(device)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.01)
 
     def act(self, state):
         if random.random() < self.epsilon:
@@ -55,7 +57,7 @@ class DQNAgent:
         else:
             # Exploit: choose the best action based on the current Q-values
             state = np.asarray(state, dtype=np.int32)
-            state = torch.FloatTensor(state).unsqueeze(0)
+            state = torch.FloatTensor(state).unsqueeze(0).to(device)
             with torch.no_grad():
                 q_values = self.model(state)
             return q_values.argmax().item()
@@ -70,11 +72,11 @@ class DQNAgent:
         state_batch, action_batch, reward_batch, next_state_batch, done_batch = zip(*batch)
 
         state_batch = np.asarray(state_batch, dtype=np.int32)
-        state_batch = torch.FloatTensor(state_batch)
-        action_batch = torch.LongTensor(action_batch).unsqueeze(1)
-        reward_batch = torch.FloatTensor(reward_batch).unsqueeze(1)
-        next_state_batch = torch.FloatTensor(next_state_batch)
-        done_batch = torch.FloatTensor(done_batch).unsqueeze(1)
+        state_batch = torch.FloatTensor(state_batch).to(device)
+        action_batch = torch.LongTensor(action_batch).unsqueeze(1).to(device)
+        reward_batch = torch.FloatTensor(reward_batch).unsqueeze(1).to(device)
+        next_state_batch = torch.FloatTensor(np.array(next_state_batch, dtype=np.float32)).to(device)
+        done_batch = torch.FloatTensor(done_batch).unsqueeze(1).to(device)
 
         q_current = self.model(state_batch).gather(1, action_batch)
         q_next = self.model(next_state_batch).max(1)[0].unsqueeze(1)
@@ -90,7 +92,7 @@ class DQNAgent:
 
 
 if __name__ == '__main__':
-    num_episodes = 5000
+    num_episodes = 500
 
     state_size = 16
     action_size = 4
@@ -117,6 +119,13 @@ if __name__ == '__main__':
         writer.add_scalar('Reward/Episode', total_reward, episode)
 
         # print(f"Episode: {episode + 1}, Reward: {total_reward}")
+    # Save the trained model with date and time as the file name
+    from datetime import datetime
+
+    # dd/mm/YY H:M:S
+    dt_string = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
+    path = f'agent{dt_string}.pth'
+    torch.save(agent.model.state_dict(), 'agent.pth')
 
     # After training, you can use the trained agent to play the game
     state = env2048.reset()
