@@ -3,20 +3,23 @@ import gymnasium as gym
 from gymnasium import spaces
 import pygame
 import mc.env.env2048.colors
+import mc.env.env2048.colors as colors
 
 
 class Gym2048(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self):
+    def __init__(self, render_mode="rgb_array"):
+        self.__game = None
         self.board = []
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0, high=2048, shape=(4, 4), dtype=np.uint16)
         self.reset()
         self._window = None
         self._clock = None
+        self._render_mode = render_mode
 
-    def reset(self):
+    def reset(self, **kwargs):
         self.board = np.zeros((4, 4), dtype=np.uint16)
         self._add_random_tile()
         self._add_random_tile()
@@ -35,25 +38,25 @@ class Gym2048(gym.Env):
         elif action == 3:  # Move right
             self._move_right()
 
-        done = self._is_game_over()
+        reward = self._calculate_reward()
+
+        done = self._is_game_over(reward)
 
         if not done and np.any(prev_board != self.board):
             self._add_random_tile()
-
-        reward = self._calculate_reward()
 
         return self.board.copy(), reward, done, {}
 
     def render(self, mode="human"):
         assert mode
-        if mode == "human":
+        if self.render_mode == "human":
             board = self.board
             for i, row in enumerate(board):
                 print(" | ".join("{:4d}".format(tile) if tile != 0 else "    " for tile in row))
                 if i < len(board) - 1:
                     print("-" * (7 * len(board) - 1))
             print("\n")
-        elif mode == "rgb_array":
+        elif self._render_mode == "rgb_array":
             return self._render_frame()
 
     def _render_frame(self):
@@ -68,7 +71,7 @@ class Gym2048(gym.Env):
         self._window.fill((255, 255, 255))
 
         # Draw the game board
-        board = self.__game.get_board()
+        board = self.board
         tile_size = 80
         margin = 10
         for i in range(len(board)):
@@ -120,17 +123,17 @@ class Gym2048(gym.Env):
             for col in range(1, 4):
                 if self.board[row][col] != 0:
                     current_col = col
-                    while current_col > 0 and (
-                            self.board[row][current_col - 1] == 0 or self.board[row][current_col - 1] ==
-                            self.board[row][col]):
-                        if self.board[row][current_col - 1] == self.board[row][col] and not merged[current_col - 1]:
-                            self.board[row][current_col - 1] += self.board[row][col]
-                            self.board[row][col] = 0
-                            merged[current_col - 1] = True
-                        else:
-                            self.board[row][current_col - 1] = self.board[row][col]
-                            self.board[row][col] = 0
+                    while current_col > 0 and self.board[row][current_col - 1] == 0:
+                        # Slide the tile to the left until an empty cell is found
+                        self.board[row][current_col - 1] = self.board[row][current_col]
+                        self.board[row][current_col] = 0
                         current_col -= 1
+                    if current_col > 0 and self.board[row][current_col - 1] == self.board[row][current_col] and not \
+                            merged[current_col - 1]:
+                        # Merge tiles if they have the same value and have not been merged before
+                        self.board[row][current_col - 1] *= 2
+                        self.board[row][current_col] = 0
+                        merged[current_col - 1] = True
 
     def _move_right(self):
         self.board = np.rot90(self.board, k=2)
@@ -143,8 +146,10 @@ class Gym2048(gym.Env):
             random_cell = empty_cells[np.random.randint(len(empty_cells))]
             self.board[random_cell[0]][random_cell[1]] = np.random.choice([2, 4])
 
-    def _is_game_over(self):
+    def _is_game_over(self, reward):
         empty_cells = np.argwhere(self.board == 0)
+        if reward >= 2048:
+            return True
         if len(empty_cells) > 0:
             return False
 
@@ -152,16 +157,14 @@ class Gym2048(gym.Env):
             for col in range(4):
                 cell_value = self.board[row][col]
                 if (row > 0 and self.board[row - 1][col] == cell_value) or \
-                   (row < 3 and self.board[row + 1][col] == cell_value) or \
-                   (col > 0 and self.board[row][col - 1] == cell_value) or \
-                   (col < 3 and self.board[row][col + 1] == cell_value):
+                        (row < 3 and self.board[row + 1][col] == cell_value) or \
+                        (col > 0 and self.board[row][col - 1] == cell_value) or \
+                        (col < 3 and self.board[row][col + 1] == cell_value):
                     return False
 
         return True
 
     def _calculate_reward(self):
-        #reward = np.sum(self.board)
+        # reward = np.sum(self.board)
         reward = np.amax(self.board)
         return reward
-
-
