@@ -45,10 +45,10 @@ class DQNAgent:
         self.epsilon = 1.0  # Exploration vs exploitation factor
         self.epsilon_decay = 0.99  # Epsilon decay rate
         self.epsilon_min = 0.01  # Minimum epsilon value
-        self.batch_size = 128  # Batch size for training
+        self.batch_size = 64  # Batch size for training
 
         self.model = DQN(state_size, action_size).to(device)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=0.01)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
 
     def act(self, state):
         if random.random() < self.epsilon:
@@ -92,8 +92,11 @@ class DQNAgent:
 
 
 if __name__ == '__main__':
-    num_episodes = 500
+    num_episodes = 1000
 
+    from datetime import datetime
+
+    dt_string = datetime.now().strftime("%d_%m_%Y__%H_%M_%S")
     state_size = 16
     action_size = 4
 
@@ -103,10 +106,13 @@ if __name__ == '__main__':
 
     writer = SummaryWriter()
 
+    reward = 0
+
     for episode in tqdm(range(num_episodes), desc="Training"):
         state = env2048.reset()  # Reset the game and get the initial state
         done = False
         total_reward = 0
+        num_2048_scores = 0
         while not done:
             action = agent.act(state)
             next_state, reward, done, info = env2048.step(action)
@@ -114,27 +120,30 @@ if __name__ == '__main__':
             state = next_state
             total_reward += reward
 
+        max_val = env2048.max_tile()
+        if num_2048_scores == 2048:  # If a 2048 score is achieved
+            num_2048_scores += 1
+
         agent.replay()
 
         writer.add_scalar('Reward/Episode', total_reward, episode)
+        writer.add_scalar('2048 Scores/Episode', num_2048_scores, episode)  # Log the number of 2048 scores
+        writer.add_scalar('Max Tile/Episode',max_val , episode)  # Log the max tile achieved
 
         # print(f"Episode: {episode + 1}, Reward: {total_reward}")
     # Save the trained model with date and time as the file name
-    from datetime import datetime
 
-    # dd/mm/YY H:M:S
-    dt_string = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
     path = f'agent{dt_string}.pth'
-    torch.save(agent.model.state_dict(), 'agent.pth')
+    torch.save(agent.model.state_dict(), path)
 
     # After training, you can use the trained agent to play the game
-    state = env2048.reset()
-    done = False
+    # state = env2048.reset()
+    # done = False
+    #
+    # while not done:
+    #     action = agent.act(state)
+    #     state, reward, done, info = env2048.step(action)
+    #     env2048.render()
+    # Perform any necessary visualization or logging
 
-    while not done:
-        action = agent.act(state)
-        state, reward, done, info = env2048.step(action)
-        env2048.render()
-        # Perform any necessary visualization or logging
-
-    print("Game over!")
+    # print("Game over!")

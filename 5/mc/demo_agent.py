@@ -11,7 +11,7 @@ import random
 
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print(f'Using device: {device}')
 
@@ -98,7 +98,7 @@ if __name__ == '__main__':
     action_size = 4
 
     agent = DQNAgent(state_size, action_size)
-    agent.model.load_state_dict(torch.load('agent.pth'))
+    agent.model.load_state_dict(torch.load('agent16_06_2023__11_54_31.pth'))
     agent.model.eval()
 
     env2048 = gym.make("Gym-v0")
