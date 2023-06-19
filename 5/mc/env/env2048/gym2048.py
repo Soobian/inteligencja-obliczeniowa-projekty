@@ -2,7 +2,6 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 import pygame
-import mc.env.env2048.colors
 import mc.env.env2048.colors as colors
 
 
@@ -40,7 +39,7 @@ class Gym2048(gym.Env):
 
         reward = self._calculate_reward()
 
-        done = self._is_game_over(reward)
+        done = self._is_game_over()
 
         if not done and np.any(prev_board != self.board):
             self._add_random_tile()
@@ -118,6 +117,26 @@ class Gym2048(gym.Env):
         self.board = np.rot90(self.board)
 
     def _move_left(self):
+        # Funkcja _move_left odpowiada za przesunięcie kafelków w lewo w każdym wierszu planszy. Działa w następujący
+        # sposób:
+        #
+        # Dla każdego wiersza planszy (od 0 do 3) inicjalizowana jest lista merged, która przechowuje informacje o
+        # tym, które kafelki zostały już połączone w danym wierszu.
+        #
+        # Następnie iterujemy po kolumnach od 1 do 3 (pomijając pierwszą kolumnę), ponieważ dla pierwszej kolumny nie
+        # ma możliwości przesunięcia kafelków w lewo.
+        #
+        # Jeśli wartość kafelka w danym wierszu i kolumnie jest różna od zera, oznacza to, że mamy kafelek,
+        # który można przesunąć w lewo.
+        #
+        # Począwszy od bieżącej kolumny (current_col), przesuwamy kafelek w lewo, dopóki nie napotkamy pustego
+        # miejsca. Każdy przesunięty kafelek jest zastępowany wartością kafelka po prawej stronie, a oryginalny
+        # kafelek jest ustawiany na zero.
+        #
+        # Jeśli wiersz został przesunięty w lewo i napotkamy kolejny kafelek o takiej samej wartości po lewej
+        # stronie oraz ten kafelek wcześniej nie został połączony (zaznaczony przez merged[current_col - 1] jako
+        # True), to łączymy te dwa kafelki. Kafelek po lewej stronie jest podwajany, a kafelek po prawej stronie jest
+        # ustawiany na zero. Dodatkowo ustawiamy merged[current_col - 1] na True, aby oznaczyć połączenie.
         for row in range(4):
             merged = [False] * 4
             for col in range(1, 4):
@@ -146,13 +165,18 @@ class Gym2048(gym.Env):
             random_cell = empty_cells[np.random.randint(len(empty_cells))]
             self.board[random_cell[0]][random_cell[1]] = np.random.choice([2, 4])
 
-    def _is_game_over(self, reward):
+    def _is_game_over(self):
         empty_cells = np.argwhere(self.board == 0)
-        if reward >= 2048:
+
+        # Check if the maximum tile value is 2048, indicating a win
+        if self.max_tile() >= 2048:
             return True
+
+        # Check if there are any empty cells left on the board
         if len(empty_cells) > 0:
             return False
 
+        # Check if there are any adjacent cells with the same value horizontally or vertically
         for row in range(4):
             for col in range(4):
                 cell_value = self.board[row][col]
@@ -162,9 +186,13 @@ class Gym2048(gym.Env):
                         (col < 3 and self.board[row][col + 1] == cell_value):
                     return False
 
+        # If none of the above conditions are met, the game is over
         return True
 
     def _calculate_reward(self):
-        # reward = np.sum(self.board)
+        # reward = np.sum(np.square(self.board))
         reward = np.amax(self.board)
         return reward
+
+    def max_tile(self):
+        return np.max(self.board)
