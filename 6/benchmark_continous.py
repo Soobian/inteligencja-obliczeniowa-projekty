@@ -35,8 +35,9 @@ for params in tqdm(hyperparams, desc=f'Hyperparams'):
 
     model.learn(total_timesteps=50000, log_interval=1)
 
+    all_rewards = []
     for _ in tqdm(range(10), desc='Experiments'):
-        all_rewards = []
+
         obs = env.reset()
         episode_reward = 0
         done = False
