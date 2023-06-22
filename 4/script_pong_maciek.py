@@ -93,7 +93,7 @@ def get_args() -> argparse.Namespace:
 
 
 def get_env():
-    return PettingZooEnv(pong_v3.env(num_players=2))
+    return PettingZooEnv(pong_v3.environment(num_players=2))
 
 
 def get_agents(

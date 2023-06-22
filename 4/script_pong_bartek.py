@@ -56,7 +56,7 @@ def _get_agents(
 
 def _get_env():
     """This function is needed to provide callables for DummyVectorEnv."""
-    return PettingZooEnv(pong_v3.env())
+    return PettingZooEnv(pong_v3.environment())
 
 
 if __name__ == "__main__":
